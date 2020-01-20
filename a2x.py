@@ -364,11 +364,20 @@ def get_source_options(asciidoc_file):
     result = []
     if os.path.isfile(asciidoc_file):
         options = ''
-        with open(asciidoc_file) as f:
+        with open(asciidoc_file, 'rb') as f:
+            line_number = 0
             for line in f:
-                mo = re.search(r'^//\s*a2x:', line)
+                line_number += 1
+                mo = re.search(b'^//\s*a2x:', line)
                 if mo:
-                    options += ' ' + line[mo.end():].strip()
+                    try:
+                        options += ' ' + line[mo.end():].strip().decode('ascii')
+                    except UnicodeDecodeError as e:
+                        #Encountered a problem decoding an option for a2x.  
+                        #Discard this option and continue on with a warning.
+                        warning(f"Options must be in {e.encoding} encoding: "
+                                f"File '{asciidoc_file}' line number "
+                                f"'{line_number}' error '{e.reason}'.")
         parse_options()
     return result
 
